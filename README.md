@@ -55,6 +55,21 @@ A powerful CLI tool to generate production-ready FastAPI projects with industry 
 
 ### Setup
 
+#### Automated Installation (Recommended)
+
+```bash
+# Clone or download this generator
+cd fastapi-generator
+
+# Run the install script
+./install.sh
+
+# The 'fastapi-gen' command is now available globally
+fastapi-gen --help
+```
+
+#### Manual Installation
+
 ```bash
 # Clone or download this generator
 cd fastapi-generator
@@ -62,10 +77,21 @@ cd fastapi-generator
 # Make the script executable
 chmod +x generate_project.py
 
-# Optional: Create an alias for easy access
+# Create an alias for easy access
 echo 'alias fastapi-gen="python3 /path/to/generate_project.py"' >> ~/.bashrc
 source ~/.bashrc
 ```
+
+### Uninstallation
+
+To remove the global `fastapi-gen` command:
+
+```bash
+cd fastapi-generator
+./uninstall.sh
+```
+
+This removes the command but keeps the generator script for future use.
 
 ## Usage
 
