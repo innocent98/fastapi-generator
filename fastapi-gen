@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# FastAPI Generator Wrapper Script
+# Provides a convenient command-line interface
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+GENERATOR="$SCRIPT_DIR/generate_project.py"
+
+# Check if generator exists
+if [ ! -f "$GENERATOR" ]; then
+    echo "Error: Generator script not found at $GENERATOR"
+    exit 1
+fi
+
+# Execute generator with all arguments
+python3 "$GENERATOR" "$@"

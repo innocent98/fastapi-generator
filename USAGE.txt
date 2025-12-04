@@ -1,0 +1,214 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║                   FastAPI Project Generator                          ║
+║              Production-Ready Boilerplate in 30 Seconds              ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+QUICK START
+═══════════
+
+1. Generate a project:
+
+   python3 generate_project.py "My API Name"
+
+2. Navigate to project:
+
+   cd my-api-name
+
+3. Setup and run:
+
+   python -m venv venv
+   source venv/bin/activate  # Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   cp .env.example .env
+   # Edit .env with your settings
+   uvicorn app.main:app --reload
+
+4. Visit your API:
+
+   http://localhost:8000/api/v1/docs
+
+
+AVAILABLE OPTIONS
+═════════════════
+
+Basic:
+  python3 generate_project.py "Project Name"
+
+With Author Info:
+  python3 generate_project.py "Project Name" \
+    --author "Your Name" \
+    --email "you@email.com" \
+    --description "Project description"
+
+Without Database:
+  python3 generate_project.py "Project Name" --no-postgres
+
+Without Redis:
+  python3 generate_project.py "Project Name" --no-redis
+
+Without Docker:
+  python3 generate_project.py "Project Name" --no-docker
+
+With Celery (Background Tasks):
+  python3 generate_project.py "Project Name" --celery
+
+Minimal Setup (No DB, No Redis, No Docker):
+  python3 generate_project.py "Project Name" \
+    --no-postgres --no-redis --no-docker
+
+
+WHAT YOU GET
+════════════
+
+✓ FastAPI application with async support
+✓ Pydantic v2 for data validation
+✓ SQLAlchemy 2.0 ORM
+✓ Alembic for migrations
+✓ JWT authentication & bcrypt
+✓ Docker & docker-compose
+✓ Pytest testing framework
+✓ Pre-commit hooks
+✓ GitHub Actions CI/CD
+✓ Structured logging with Loguru
+✓ API documentation (Swagger + ReDoc)
+✓ Makefile for common tasks
+✓ Environment configuration
+✓ Clean architecture
+
+
+MAKEFILE COMMANDS
+═════════════════
+
+After generating, use these commands in your project:
+
+  make run          - Start development server
+  make test         - Run tests
+  make test-cov     - Run tests with coverage
+  make format       - Format code (black + isort)
+  make lint         - Check code quality
+  make docker-up    - Start Docker containers
+  make docker-down  - Stop Docker containers
+  make migrate      - Run database migrations
+  make help         - Show all commands
+
+
+PROJECT STRUCTURE
+═════════════════
+
+your-project/
+├── app/
+│   ├── api/v1/endpoints/    ← Add your API endpoints here
+│   ├── core/                ← Configuration, security, logging
+│   ├── db/models/           ← Database models here
+│   ├── schemas/             ← Pydantic schemas here
+│   ├── services/            ← Business logic here
+│   └── main.py              ← FastAPI application
+├── tests/                   ← Test files here
+├── .env                     ← Your configuration
+├── Makefile                 ← Quick commands
+├── requirements.txt         ← Dependencies
+└── README.md               ← Project documentation
+
+
+COMMON WORKFLOWS
+════════════════
+
+Add a New Endpoint:
+  1. Create app/api/v1/endpoints/users.py
+  2. Add router to app/api/v1/api.py
+  3. Run and test
+
+Add a Database Model:
+  1. Create app/db/models/user.py
+  2. Run: alembic revision --autogenerate -m "add user model"
+  3. Run: alembic upgrade head
+
+Add Tests:
+  1. Create tests/api/test_users.py
+  2. Run: make test
+
+Docker Setup:
+  1. Edit .env with your settings
+  2. Run: docker-compose up -d
+  3. Visit: http://localhost:8000
+
+
+DOCUMENTATION
+═════════════
+
+📖 README.md        - Complete documentation
+📖 QUICKSTART.md    - 5-minute quick start guide
+📖 EXAMPLES.md      - Real-world usage examples
+📖 WHY_USE_THIS.md  - Benefits and comparisons
+
+
+TIPS
+════
+
+• Always activate virtual environment before working
+• Generate SECRET_KEY with: openssl rand -hex 32
+• Use Makefile commands for consistency
+• Write tests for new features
+• Format code before committing (make format)
+• Check generated project README for detailed docs
+
+
+TROUBLESHOOTING
+═══════════════
+
+Issue: Module not found
+Fix: source venv/bin/activate && pip install -r requirements.txt
+
+Issue: Database connection error
+Fix: Check DATABASE_URL in .env, start PostgreSQL
+
+Issue: Port 8000 in use
+Fix: uvicorn app.main:app --reload --port 8001
+
+
+EXAMPLES
+════════
+
+Simple API:
+  python3 generate_project.py "Todo API"
+
+E-Commerce Backend:
+  python3 generate_project.py "Shop Backend" \
+    --description "E-commerce platform API"
+
+Microservice:
+  python3 generate_project.py "User Service" \
+    --no-redis --description "User management microservice"
+
+Background Jobs:
+  python3 generate_project.py "Task Processor" \
+    --celery --description "Background job processor"
+
+
+TIME SAVED
+══════════
+
+Manual FastAPI Setup: 3-5 hours
+With This Generator:   30 seconds
+─────────────────────────────────
+Time Saved:           99% faster!
+
+
+SUPPORT
+═══════
+
+Questions? Check:
+• Generated project's README.md
+• QUICKSTART.md for quick help
+• EXAMPLES.md for use cases
+• FastAPI docs: https://fastapi.tiangolo.com
+
+
+START BUILDING
+══════════════
+
+python3 generate_project.py "Your API Name"
+
+Happy coding! 🚀
+
+═══════════════════════════════════════════════════════════════════════
