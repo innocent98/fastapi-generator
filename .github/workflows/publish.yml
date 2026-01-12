@@ -1,0 +1,82 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write  # Required for trusted publishing
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.8.4
+
+      - name: Verify version matches tag
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+          POETRY_VERSION=$(poetry version -s)
+          if [ "$TAG_VERSION" != "$POETRY_VERSION" ]; then
+            echo "Tag version ($TAG_VERSION) does not match pyproject.toml version ($POETRY_VERSION)"
+            exit 1
+          fi
+          echo "Version verified: $POETRY_VERSION"
+
+      - name: Build package
+        run: poetry build
+
+      - name: Check package
+        run: |
+          pip install twine
+          twine check dist/*
+
+      # Option 1: Trusted Publishing (Recommended - no token needed)
+      # Configure at: https://pypi.org/manage/project/fastapi-gen/settings/publishing/
+      - name: Publish to PyPI (Trusted Publishing)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
+
+      # Option 2: Using API Token (uncomment if not using trusted publishing)
+      # - name: Publish to PyPI (Token)
+      #   env:
+      #     POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}
+      #   run: poetry publish
+
+  publish-testpypi:
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+
+      - name: Build package
+        run: poetry build
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true

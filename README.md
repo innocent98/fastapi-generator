@@ -1,12 +1,13 @@
 # FastAPI Project Generator
 
-A powerful CLI tool to generate production-ready FastAPI projects with industry best practices in seconds.
+A powerful CLI tool to generate production-ready FastAPI projects with Poetry and industry best practices in seconds.
 
 ## Features
 
 ### What This Generator Creates
 
 - **Complete FastAPI Application** with async support
+- **Poetry** for modern dependency management
 - **Clean Architecture** with separation of concerns
 - **API Versioning** (v1 by default, easily extensible)
 - **JWT Authentication** with security best practices
@@ -23,16 +24,16 @@ A powerful CLI tool to generate production-ready FastAPI projects with industry 
   - Sample tests
 - **Code Quality**:
   - Pre-commit hooks
-  - Black, isort, flake8, mypy
+  - Black, isort, Ruff, mypy
   - Comprehensive linting setup
 - **CI/CD**:
-  - GitHub Actions workflow
+  - GitHub Actions workflow with Poetry
   - Automated testing
   - Code coverage integration
 - **Docker Support**:
-  - Production-ready Dockerfile
+  - Production-ready Dockerfile with Poetry
   - Docker Compose for local development
-  - Multi-service orchestration
+  - Multi-stage builds
 - **Documentation**:
   - Auto-generated OpenAPI docs
   - Comprehensive README
@@ -51,58 +52,60 @@ A powerful CLI tool to generate production-ready FastAPI projects with industry 
 ### Prerequisites
 
 - Python 3.11 or higher
+- Poetry 1.8+ (for development)
 - Git (optional, for repository initialization)
 
-### Setup
-
-#### Automated Installation (Recommended)
+### Install from PyPI (Recommended)
 
 ```bash
-# Clone or download this generator
-cd fastapi-generator
+# Using pip
+pip install fastapi-gen
 
-# Run the install script
-./install.sh
-
-# The 'fastapi-gen' command is now available globally
-fastapi-gen --help
+# Using pipx (recommended for CLI tools)
+pipx install fastapi-gen
 ```
 
-#### Manual Installation
+### Install from Source
 
 ```bash
-# Clone or download this generator
+# Clone the repository
+git clone https://github.com/yourusername/fastapi-generator.git
 cd fastapi-generator
 
-# Make the script executable
-chmod +x generate_project.py
+# Install with Poetry
+poetry install
 
-# Create an alias for easy access
-echo 'alias fastapi-gen="python3 /path/to/generate_project.py"' >> ~/.bashrc
-source ~/.bashrc
+# Now you can use the generator
+poetry run fastapi-gen --help
 ```
 
-### Uninstallation
-
-To remove the global `fastapi-gen` command:
+### Development Installation
 
 ```bash
+git clone https://github.com/yourusername/fastapi-generator.git
 cd fastapi-generator
-./uninstall.sh
-```
 
-This removes the command but keeps the generator script for future use.
+# Install all dependencies including dev
+poetry install
+
+# Run tests
+poetry run pytest
+
+# Run the generator
+poetry run fastapi-gen "My Test API"
+```
 
 ## Usage
 
 ### Basic Usage
 
 ```bash
-python generate_project.py "My Awesome API"
+fastapi-gen "My Awesome API"
 ```
 
 This creates a new project with:
-- PostgreSQL database
+- Poetry for dependency management
+- PostgreSQL database support
 - Redis caching
 - Docker support
 - All best practices enabled
@@ -110,7 +113,7 @@ This creates a new project with:
 ### Advanced Options
 
 ```bash
-python generate_project.py "My API" \
+fastapi-gen "My API" \
   --author "John Doe" \
   --email "john@example.com" \
   --description "My awesome FastAPI project" \
@@ -132,19 +135,20 @@ python generate_project.py "My API" \
 | `--no-redis` | Skip Redis setup | False |
 | `--no-docker` | Skip Docker files | False |
 | `--celery` | Include Celery for background tasks | False |
+| `--version` | Show version and exit | - |
 
 ### Examples
 
 #### 1. Simple API (no database)
 
 ```bash
-python generate_project.py "Simple API" --no-postgres --no-redis
+fastapi-gen "Simple API" --no-postgres --no-redis
 ```
 
 #### 2. Microservice with Celery
 
 ```bash
-python generate_project.py "Email Service" \
+fastapi-gen "Email Service" \
   --description "Microservice for email processing" \
   --celery
 ```
@@ -152,7 +156,7 @@ python generate_project.py "Email Service" \
 #### 3. Full-Stack Backend
 
 ```bash
-python generate_project.py "E-Commerce Backend" \
+fastapi-gen "E-Commerce Backend" \
   --author "Jane Smith" \
   --email "jane@startup.com" \
   --description "Backend API for e-commerce platform"
@@ -198,13 +202,11 @@ my-awesome-api/
 ├── logs/                      # Application logs
 ├── .github/
 │   └── workflows/
-│       └── ci.yml            # GitHub Actions
-├── requirements.txt
-├── requirements-dev.txt
-├── Dockerfile
+│       └── ci.yml             # GitHub Actions with Poetry
+├── pyproject.toml             # Poetry configuration
+├── Dockerfile                 # Multi-stage Poetry build
 ├── docker-compose.yml
 ├── alembic.ini
-├── pytest.ini
 ├── .env
 ├── .env.example
 ├── .gitignore
@@ -222,32 +224,34 @@ my-awesome-api/
 cd my-awesome-api
 ```
 
-### 2. Set Up Virtual Environment
+### 2. Install Dependencies with Poetry
 
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Install all dependencies (recommended for development)
+poetry install
+
+# Or install only production dependencies
+poetry install --only main
 ```
 
-### 3. Install Dependencies
+### 3. Activate Virtual Environment
 
 ```bash
-# Using Makefile (recommended)
-make dev-install
+# Option 1: Activate shell
+poetry shell
 
-# Or manually
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
-pre-commit install
+# Option 2: Run commands with poetry run prefix
+poetry run uvicorn app.main:app --reload
 ```
 
 ### 4. Configure Environment
 
 ```bash
 # Edit .env file with your settings
+cp .env.example .env
 nano .env
 
-# At minimum, generate a secure SECRET_KEY:
+# Generate a secure SECRET_KEY:
 openssl rand -hex 32
 ```
 
@@ -258,20 +262,19 @@ openssl rand -hex 32
 docker-compose up -d db
 
 # Run migrations
+poetry run alembic upgrade head
+# Or with Makefile
 make migrate
-
-# Or manually
-alembic upgrade head
 ```
 
 ### 6. Run Development Server
 
 ```bash
-# Using Makefile
+# Using Makefile (recommended)
 make run
 
-# Or manually
-uvicorn app.main:app --reload
+# Or with Poetry
+poetry run uvicorn app.main:app --reload
 
 # Or with Docker
 docker-compose up
@@ -286,24 +289,38 @@ docker-compose up
 
 ## Makefile Commands
 
-The generated project includes a Makefile with common commands:
+The generated project includes a Makefile with Poetry-based commands:
 
 ```bash
 make help           # Show all available commands
 make install        # Install production dependencies
-make dev-install    # Install dev dependencies + pre-commit hooks
+make dev-install    # Install all deps + pre-commit hooks
 make run            # Run development server
 make test           # Run tests
 make test-cov       # Run tests with coverage report
 make lint           # Check code quality
-make format         # Format code with black and isort
+make format         # Format code with black, isort, ruff
 make clean          # Remove cache and generated files
 make docker-build   # Build Docker image
 make docker-up      # Start Docker containers
 make docker-down    # Stop Docker containers
 make migrate        # Run database migrations
 make migrate-create # Create new migration
+make shell          # Activate poetry shell
 ```
+
+## Why Poetry?
+
+The generated projects use Poetry instead of pip/requirements.txt for several advantages:
+
+| Feature | requirements.txt | Poetry |
+|---------|-----------------|--------|
+| **Dependency Resolution** | Manual | Automatic with conflict detection |
+| **Lock File** | None (or manual) | `poetry.lock` for reproducibility |
+| **Virtual Environments** | Manual setup | Automatic management |
+| **Dev Dependencies** | Separate file | Built-in groups |
+| **Version Constraints** | Basic pinning | Semantic versioning (`^1.0`, `~1.0`) |
+| **Reproducible Builds** | Difficult | Guaranteed |
 
 ## Best Practices Included
 
@@ -320,7 +337,7 @@ make migrate-create # Create new migration
 - Type hints throughout
 - Pydantic for validation
 - Pre-commit hooks
-- Linting (black, isort, flake8, mypy)
+- Linting (black, isort, ruff, mypy)
 - Comprehensive .gitignore
 
 ### 3. Testing
@@ -348,10 +365,10 @@ make migrate-create # Create new migration
 
 ### 6. DevOps
 
-- Docker containerization
+- Docker containerization with Poetry
 - Docker Compose orchestration
 - Health check endpoints
-- GitHub Actions CI/CD
+- GitHub Actions CI/CD with Poetry caching
 - Production-ready gunicorn setup
 
 ### 7. Logging
@@ -389,6 +406,19 @@ make migrate-create
 make migrate
 ```
 
+### Adding Dependencies
+
+```bash
+# Add a production dependency
+poetry add package-name
+
+# Add a dev dependency
+poetry add --group dev package-name
+
+# Update all dependencies
+poetry update
+```
+
 ### Adding Tests
 
 ```bash
@@ -399,25 +429,21 @@ touch tests/api/test_users.py
 make test
 ```
 
-## Comparison with Other Tools
-
-| Feature | This Generator | Cookiecutter | Manual Setup |
-|---------|---------------|--------------|--------------|
-| Setup Time | < 1 minute | 2-3 minutes | 30-60 minutes |
-| Customization | High | Medium | Unlimited |
-| Best Practices | Built-in | Template dependent | Manual |
-| Updates | Script update | Template update | Manual |
-| Learning Curve | Low | Medium | High |
-| Flexibility | High | Medium | Unlimited |
-
 ## Troubleshooting
+
+### Issue: Poetry not found
+
+**Solution**: Install Poetry
+```bash
+curl -sSL https://install.python-poetry.org | python3 -
+```
 
 ### Issue: Import errors
 
-**Solution**: Ensure you're in the virtual environment and installed dependencies
+**Solution**: Ensure dependencies are installed
 ```bash
-source venv/bin/activate
-pip install -r requirements.txt
+poetry install
+poetry shell
 ```
 
 ### Issue: Database connection failed
@@ -431,7 +457,7 @@ docker-compose up -d db
 
 **Solution**: Either stop the process using port 8000 or change the port
 ```bash
-uvicorn app.main:app --reload --port 8001
+poetry run uvicorn app.main:app --reload --port 8001
 ```
 
 ### Issue: Alembic can't detect models
@@ -460,7 +486,8 @@ Found a bug or want to add a feature? Contributions are welcome!
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Submit a pull request
+4. Run tests: `poetry run pytest`
+5. Submit a pull request
 
 ## License
 
@@ -478,4 +505,4 @@ For issues or questions, please open an issue on GitHub.
 
 ---
 
-**Happy Coding!** 🚀
+**Happy Coding!**

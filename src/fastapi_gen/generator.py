@@ -1,27 +1,32 @@
-#!/usr/bin/env python3
 """
 FastAPI Project Generator
-Generates a production-ready FastAPI project with best practices
+Generates a production-ready FastAPI project with best practices and Poetry for dependency management.
 """
 
-import os
-import sys
-import argparse
-from pathlib import Path
-from typing import Dict, Any
+import secrets
 import subprocess
+import sys
+from pathlib import Path
+from typing import Any
 
 
 class FastAPIGenerator:
-    def __init__(self, project_name: str, author: str = "Your Name",
-                 email: str = "your.email@example.com",
-                 description: str = "A FastAPI project",
-                 use_postgres: bool = True,
-                 use_redis: bool = True,
-                 use_docker: bool = True,
-                 use_celery: bool = False):
+    """Generator for production-ready FastAPI projects."""
+
+    def __init__(
+        self,
+        project_name: str,
+        author: str = "Your Name",
+        email: str = "your.email@example.com",
+        description: str = "A FastAPI project",
+        use_postgres: bool = True,
+        use_redis: bool = True,
+        use_docker: bool = True,
+        use_celery: bool = False,
+    ) -> None:
         self.project_name = project_name
         self.project_slug = project_name.lower().replace(" ", "-").replace("_", "-")
+        self.package_name = self.project_slug.replace("-", "_")
         self.author = author
         self.email = email
         self.description = description
@@ -33,8 +38,8 @@ class FastAPIGenerator:
         # Directory structure
         self.base_path = Path.cwd() / self.project_slug
 
-    def create_directory_structure(self):
-        """Create the project directory structure"""
+    def create_directory_structure(self) -> None:
+        """Create the project directory structure."""
         print(f"Creating project structure for {self.project_name}...")
 
         directories = [
@@ -64,98 +69,147 @@ class FastAPIGenerator:
         for directory in directories:
             directory.mkdir(parents=True, exist_ok=True)
 
-        print(f"✓ Directory structure created at {self.base_path}")
+        print(f"  Created directory structure at {self.base_path}")
 
-    def create_requirements_files(self):
-        """Create requirements.txt and requirements-dev.txt"""
-        print("Creating requirements files...")
+    def create_pyproject_toml(self) -> None:
+        """Create pyproject.toml with Poetry configuration."""
+        print("Creating pyproject.toml...")
 
-        requirements = """# Core
-fastapi==0.115.0
-uvicorn[standard]==0.32.0
-pydantic==2.11.4
-pydantic-settings==2.9.1
-python-multipart==0.0.20
-python-dotenv==1.1.0
-
-# Security
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-bcrypt==4.0.1
-
-# Database
-sqlalchemy==2.0.41
-alembic==1.15.2
-"""
+        # Build dependencies
+        dependencies = [
+            'python = "^3.11"',
+            'fastapi = "^0.115.0"',
+            'uvicorn = {extras = ["standard"], version = "^0.32.0"}',
+            'pydantic = "^2.11.0"',
+            'pydantic-settings = "^2.9.0"',
+            'python-multipart = "^0.0.20"',
+            'python-dotenv = "^1.1.0"',
+            'python-jose = {extras = ["cryptography"], version = "^3.3.0"}',
+            'passlib = {extras = ["bcrypt"], version = "^1.7.4"}',
+            'bcrypt = "^4.0.1"',
+            'sqlalchemy = "^2.0.41"',
+            'alembic = "^1.15.0"',
+            'loguru = "^0.7.3"',
+            'emails = "^0.6"',
+            'jinja2 = "^3.1.6"',
+            'email-validator = "^2.2.0"',
+            'httpx = "^0.27.0"',
+            'python-dateutil = "^2.8.2"',
+            'gunicorn = "^23.0.0"',
+        ]
 
         if self.use_postgres:
-            requirements += "psycopg2-binary==2.9.10\n"
+            dependencies.append('psycopg2-binary = "^2.9.10"')
 
         if self.use_redis:
-            requirements += "\n# Caching and Rate Limiting\nredis==5.0.0\nslowapi==0.1.9\n"
+            dependencies.append('redis = "^5.0.0"')
+            dependencies.append('slowapi = "^0.1.9"')
 
         if self.use_celery:
-            requirements += "\n# Background Tasks\ncelery==5.3.4\nflower==2.0.1\n"
+            dependencies.append('celery = "^5.3.4"')
+            dependencies.append('flower = "^2.0.1"')
 
-        requirements += """
-# Logging
-loguru==0.7.3
+        dependencies_str = "\n".join(dependencies)
 
-# Email
-emails==0.6
-jinja2==3.1.6
-email-validator==2.2.0
+        pyproject_content = f'''[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
 
-# Utilities
-httpx==0.27.0
-python-dateutil==2.8.2
+[tool.poetry]
+name = "{self.project_slug}"
+version = "0.1.0"
+description = "{self.description}"
+authors = ["{self.author} <{self.email}>"]
+readme = "README.md"
+packages = [{{include = "app"}}]
 
-# Production
-gunicorn==23.0.0
+[tool.poetry.dependencies]
+{dependencies_str}
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.0"
+pytest-asyncio = "^0.24.0"
+pytest-cov = "^6.0.0"
+pytest-mock = "^3.14.0"
+black = "^24.10.0"
+flake8 = "^7.1.0"
+mypy = "^1.13.0"
+isort = "^5.13.0"
+pylint = "^3.3.0"
+pre-commit = "^4.0.0"
+ipython = "^8.29.0"
+ruff = "^0.8.0"
+
+[tool.poetry.scripts]
+start = "app.main:start"
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+include = "\\\\.pyi?$"
+exclude = """
+/(
+    \\.git
+    | \\.hg
+    | \\.mypy_cache
+    | \\.tox
+    | \\.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+    | alembic
+)/
 """
 
-        requirements_dev = """# Testing
-pytest==8.3.0
-pytest-asyncio==0.24.0
-pytest-cov==6.0.0
-pytest-mock==3.14.0
-httpx==0.27.0
+[tool.isort]
+profile = "black"
+line_length = 100
+skip = [".git", ".venv", "alembic"]
 
-# Code Quality
-black==24.10.0
-flake8==7.1.0
-mypy==1.13.0
-isort==5.13.0
-pylint==3.3.0
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+exclude = ["alembic/"]
 
-# Pre-commit
-pre-commit==4.0.0
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = [".git", ".venv", "alembic"]
 
-# Development
-ipython==8.29.0
-"""
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4"]
+ignore = ["E501"]
 
-        with open(self.base_path / "requirements.txt", "w") as f:
-            f.write(requirements.strip())
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+addopts = "-v --strict-markers --cov=app --cov-report=term-missing --cov-report=html"
+'''
 
-        with open(self.base_path / "requirements-dev.txt", "w") as f:
-            f.write(requirements_dev.strip())
+        with open(self.base_path / "pyproject.toml", "w") as f:
+            f.write(pyproject_content)
 
-        print("✓ Requirements files created")
+        print("  Created pyproject.toml")
 
-    def create_core_config(self):
-        """Create core configuration files"""
+    def create_core_config(self) -> None:
+        """Create core configuration files."""
         print("Creating core configuration...")
 
-        config_content = """from typing import List, Optional, Any, Dict
+        config_content = f'''from typing import List, Optional
 from pydantic import AnyHttpUrl, field_validator, EmailStr
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
     # Project Info
-    PROJECT_NAME: str = "{project_name}"
-    VERSION: str = "1.0.0"
+    PROJECT_NAME: str = "{self.project_name}"
+    VERSION: str = "0.1.0"
     API_V1_STR: str = "/api/v1"
     ENVIRONMENT: str = "development"
 
@@ -182,7 +236,7 @@ class Settings(BaseSettings):
         elif isinstance(v, (list, str)):
             return v
         raise ValueError(v)
-""".format(project_name=self.project_name)
+'''
 
         if self.use_postgres:
             config_content += """
@@ -224,25 +278,30 @@ settings = Settings()
             f.write(config_content)
 
         # Create __init__.py files
-        (self.base_path / "app" / "__init__.py").touch()
-        (self.base_path / "app" / "core" / "__init__.py").touch()
-        (self.base_path / "app" / "api" / "__init__.py").touch()
-        (self.base_path / "app" / "api" / "v1" / "__init__.py").touch()
-        (self.base_path / "app" / "api" / "v1" / "endpoints" / "__init__.py").touch()
-        (self.base_path / "app" / "db" / "__init__.py").touch()
-        (self.base_path / "app" / "db" / "models" / "__init__.py").touch()
-        (self.base_path / "app" / "schemas" / "__init__.py").touch()
-        (self.base_path / "app" / "services" / "__init__.py").touch()
-        (self.base_path / "app" / "utils" / "__init__.py").touch()
-        (self.base_path / "app" / "middleware" / "__init__.py").touch()
+        init_files = [
+            self.base_path / "app" / "__init__.py",
+            self.base_path / "app" / "core" / "__init__.py",
+            self.base_path / "app" / "api" / "__init__.py",
+            self.base_path / "app" / "api" / "v1" / "__init__.py",
+            self.base_path / "app" / "api" / "v1" / "endpoints" / "__init__.py",
+            self.base_path / "app" / "db" / "__init__.py",
+            self.base_path / "app" / "db" / "models" / "__init__.py",
+            self.base_path / "app" / "schemas" / "__init__.py",
+            self.base_path / "app" / "services" / "__init__.py",
+            self.base_path / "app" / "utils" / "__init__.py",
+            self.base_path / "app" / "middleware" / "__init__.py",
+        ]
 
-        print("✓ Core configuration created")
+        for init_file in init_files:
+            init_file.touch()
 
-    def create_security_module(self):
-        """Create security utilities"""
+        print("  Created core configuration")
+
+    def create_security_module(self) -> None:
+        """Create security utilities."""
         print("Creating security module...")
 
-        security_content = """from datetime import datetime, timedelta
+        security_content = '''from datetime import datetime, timedelta
 from typing import Any, Optional, Union
 
 from jose import jwt
@@ -274,18 +333,18 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
-"""
+'''
 
         with open(self.base_path / "app" / "core" / "security.py", "w") as f:
             f.write(security_content)
 
-        print("✓ Security module created")
+        print("  Created security module")
 
-    def create_logger_module(self):
-        """Create logging configuration"""
+    def create_logger_module(self) -> None:
+        """Create logging configuration."""
         print("Creating logger module...")
 
-        logger_content = """import sys
+        logger_content = '''import sys
 from loguru import logger
 from app.core.config import settings
 
@@ -314,7 +373,7 @@ def setup_logging():
 
 
 log = setup_logging()
-"""
+'''
 
         with open(self.base_path / "app" / "core" / "logger.py", "w") as f:
             f.write(logger_content)
@@ -323,19 +382,19 @@ log = setup_logging()
         (self.base_path / "logs").mkdir(exist_ok=True)
         (self.base_path / "logs" / ".gitkeep").touch()
 
-        print("✓ Logger module created")
+        print("  Created logger module")
 
-    def create_database_module(self):
-        """Create database configuration"""
+    def create_database_module(self) -> None:
+        """Create database configuration."""
         print("Creating database module...")
 
         if self.use_postgres:
-            base_content = """from sqlalchemy.ext.declarative import declarative_base
+            base_content = '''from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
-"""
+'''
 
-            session_content = """from sqlalchemy import create_engine
+            session_content = '''from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings
@@ -355,7 +414,7 @@ def get_db():
         yield db
     finally:
         db.close()
-"""
+'''
 
             with open(self.base_path / "app" / "db" / "base.py", "w") as f:
                 f.write(base_content)
@@ -363,13 +422,13 @@ def get_db():
             with open(self.base_path / "app" / "db" / "session.py", "w") as f:
                 f.write(session_content)
 
-        print("✓ Database module created")
+        print("  Created database module")
 
-    def create_api_dependencies(self):
-        """Create API dependencies"""
+    def create_api_dependencies(self) -> None:
+        """Create API dependencies."""
         print("Creating API dependencies...")
 
-        deps_content = """from typing import Generator
+        deps_content = '''from typing import Generator
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
@@ -409,21 +468,20 @@ async def get_current_user(
     # return user
 
     return {"user_id": user_id}
-"""
+'''
 
         with open(self.base_path / "app" / "api" / "deps.py", "w") as f:
             f.write(deps_content)
 
-        print("✓ API dependencies created")
+        print("  Created API dependencies")
 
-    def create_main_app(self):
-        """Create main FastAPI application"""
+    def create_main_app(self) -> None:
+        """Create main FastAPI application."""
         print("Creating main application...")
 
-        main_content = """from fastapi import FastAPI
+        main_content = '''from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
-from fastapi import Request
 import time
 
 from app.core.config import settings
@@ -483,7 +541,8 @@ def health_check():
     return {"status": "healthy"}
 
 
-if __name__ == "__main__":
+def start():
+    """Entry point for poetry script."""
     import uvicorn
     uvicorn.run(
         "app.main:app",
@@ -491,27 +550,31 @@ if __name__ == "__main__":
         port=settings.SERVER_PORT,
         reload=True if settings.ENVIRONMENT == "development" else False
     )
-"""
+
+
+if __name__ == "__main__":
+    start()
+'''
 
         with open(self.base_path / "app" / "main.py", "w") as f:
             f.write(main_content)
 
-        print("✓ Main application created")
+        print("  Created main application")
 
-    def create_api_router(self):
-        """Create API router and sample endpoints"""
+    def create_api_router(self) -> None:
+        """Create API router and sample endpoints."""
         print("Creating API router...")
 
-        api_router_content = """from fastapi import APIRouter
+        api_router_content = '''from fastapi import APIRouter
 
 from app.api.v1.endpoints import health
 
 api_router = APIRouter()
 
 api_router.include_router(health.router, prefix="/health", tags=["health"])
-"""
+'''
 
-        health_endpoint_content = """from fastapi import APIRouter
+        health_endpoint_content = '''from fastapi import APIRouter
 from datetime import datetime
 
 router = APIRouter()
@@ -523,7 +586,7 @@ def health_check():
         "status": "ok",
         "timestamp": datetime.utcnow().isoformat()
     }
-"""
+'''
 
         with open(self.base_path / "app" / "api" / "v1" / "api.py", "w") as f:
             f.write(api_router_content)
@@ -531,19 +594,18 @@ def health_check():
         with open(self.base_path / "app" / "api" / "v1" / "endpoints" / "health.py", "w") as f:
             f.write(health_endpoint_content)
 
-        print("✓ API router created")
+        print("  Created API router")
 
-    def create_env_files(self):
-        """Create .env and .env.example files"""
+    def create_env_files(self) -> None:
+        """Create .env and .env.example files."""
         print("Creating environment files...")
 
         # Generate a random SECRET_KEY
-        import secrets
         secret_key = secrets.token_hex(32)
 
         env_example = f"""# Application
 PROJECT_NAME={self.project_name}
-VERSION=1.0.0
+VERSION=0.1.0
 API_V1_STR=/api/v1
 ENVIRONMENT=development
 
@@ -595,33 +657,50 @@ FIRST_SUPERUSER_PASSWORD=changethis
         with open(self.base_path / ".env", "w") as f:
             f.write(env_example)
 
-        print("✓ Environment files created")
+        print("  Created environment files")
 
-    def create_docker_files(self):
-        """Create Docker and docker-compose files"""
+    def create_docker_files(self) -> None:
+        """Create Docker and docker-compose files with Poetry support."""
         if not self.use_docker:
             return
 
         print("Creating Docker files...")
 
-        dockerfile = """FROM python:3.11-slim
+        dockerfile = '''FROM python:3.11-slim as builder
 
 WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \\
-    netcat-traditional \\
-    libpq-dev \\
-    gcc \\
-    && apt-get clean \\
+    curl \\
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
-COPY requirements.txt .
+# Install Poetry
+ENV POETRY_HOME="/opt/poetry"
+ENV POETRY_VERSION=1.8.4
+RUN curl -sSL https://install.python-poetry.org | python3 - && \\
+    ln -s /opt/poetry/bin/poetry /usr/local/bin/poetry
 
-# Install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip && \\
-    pip install --no-cache-dir -r requirements.txt
+# Copy dependency files
+COPY pyproject.toml poetry.lock* ./
+
+# Install dependencies (no dev dependencies for production)
+RUN poetry config virtualenvs.create false && \\
+    poetry install --no-interaction --no-ansi --only main
+
+# Production stage
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \\
+    libpq-dev \\
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy installed packages from builder
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy application
 COPY ./app /app/app
@@ -633,11 +712,9 @@ USER appuser
 EXPOSE 8000
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-"""
+'''
 
-        docker_compose = f"""version: '3.8'
-
-services:
+        docker_compose = f'''services:
   api:
     build: .
     container_name: {self.project_slug}_api
@@ -648,7 +725,7 @@ services:
     env_file:
       - .env
     depends_on:
-"""
+'''
 
         if self.use_postgres:
             docker_compose += "      - db\n"
@@ -665,20 +742,20 @@ services:
 """
 
         if self.use_postgres:
-            docker_compose += """  db:
+            docker_compose += f"""  db:
     image: postgres:15
-    container_name: {project_slug}_db
+    container_name: {self.project_slug}_db
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: {project_slug}_db
+      POSTGRES_DB: {self.project_slug}_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     restart: unless-stopped
 
-""".format(project_slug=self.project_slug)
+"""
 
         if self.use_redis:
             docker_compose += f"""  redis:
@@ -727,15 +804,18 @@ coverage.xml
 *.db
 *.sqlite
 .DS_Store
+.ruff_cache
+htmlcov/
+dist/
 """
 
         with open(self.base_path / ".dockerignore", "w") as f:
             f.write(dockerignore)
 
-        print("✓ Docker files created")
+        print("  Created Docker files")
 
-    def create_gitignore(self):
-        """Create .gitignore file"""
+    def create_gitignore(self) -> None:
+        """Create .gitignore file."""
         print("Creating .gitignore...")
 
         gitignore = """# Byte-compiled / optimized / DLL files
@@ -791,6 +871,9 @@ ENV/
 env.bak/
 venv.bak/
 
+# Poetry
+poetry.lock
+
 # IDEs
 .vscode/
 .idea/
@@ -819,6 +902,9 @@ alembic/versions/*.pyc
 .dmypy.json
 dmypy.json
 
+# Ruff
+.ruff_cache/
+
 # Pytest
 .pytest_cache/
 """
@@ -826,10 +912,10 @@ dmypy.json
         with open(self.base_path / ".gitignore", "w") as f:
             f.write(gitignore)
 
-        print("✓ .gitignore created")
+        print("  Created .gitignore")
 
-    def create_alembic_config(self):
-        """Create Alembic configuration"""
+    def create_alembic_config(self) -> None:
+        """Create Alembic configuration."""
         if not self.use_postgres:
             return
 
@@ -878,7 +964,7 @@ format = %(levelname)-5.5s [%(name)s] %(message)s
 datefmt = %H:%M:%S
 """
 
-        env_py = """from logging.config import fileConfig
+        env_py = '''from logging.config import fileConfig
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
@@ -935,7 +1021,7 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
-"""
+'''
 
         script_py_mako = '''"""${message}
 
@@ -974,13 +1060,13 @@ def downgrade() -> None:
 
         (self.base_path / "alembic" / "versions" / ".gitkeep").touch()
 
-        print("✓ Alembic configuration created")
+        print("  Created Alembic configuration")
 
-    def create_test_files(self):
-        """Create test configuration and sample tests"""
+    def create_test_files(self) -> None:
+        """Create test configuration and sample tests."""
         print("Creating test files...")
 
-        conftest = """import pytest
+        conftest = '''import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -1018,9 +1104,9 @@ def client(db):
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
-"""
+'''
 
-        test_health = """def test_health_check(client):
+        test_health = '''def test_health_check(client):
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json()["status"] == "healthy"
@@ -1030,19 +1116,7 @@ def test_root(client):
     response = client.get("/")
     assert response.status_code == 200
     assert "message" in response.json()
-"""
-
-        pytest_ini = """[pytest]
-testpaths = tests
-python_files = test_*.py
-python_functions = test_*
-addopts =
-    -v
-    --strict-markers
-    --cov=app
-    --cov-report=term-missing
-    --cov-report=html
-"""
+'''
 
         with open(self.base_path / "tests" / "conftest.py", "w") as f:
             f.write(conftest)
@@ -1050,17 +1124,14 @@ addopts =
         with open(self.base_path / "tests" / "test_health.py", "w") as f:
             f.write(test_health)
 
-        with open(self.base_path / "pytest.ini", "w") as f:
-            f.write(pytest_ini)
-
         (self.base_path / "tests" / "__init__.py").touch()
         (self.base_path / "tests" / "api" / "__init__.py").touch()
         (self.base_path / "tests" / "services" / "__init__.py").touch()
 
-        print("✓ Test files created")
+        print("  Created test files")
 
-    def create_precommit_config(self):
-        """Create pre-commit configuration"""
+    def create_precommit_config(self) -> None:
+        """Create pre-commit configuration."""
         print("Creating pre-commit configuration...")
 
         precommit = """repos:
@@ -1088,11 +1159,11 @@ addopts =
       - id: isort
         args: ["--profile", "black"]
 
-  - repo: https://github.com/PyCQA/flake8
-    rev: 7.1.0
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.8.0
     hooks:
-      - id: flake8
-        args: ["--max-line-length=100", "--extend-ignore=E203,W503"]
+      - id: ruff
+        args: ["--fix"]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.13.0
@@ -1104,10 +1175,10 @@ addopts =
         with open(self.base_path / ".pre-commit-config.yaml", "w") as f:
             f.write(precommit)
 
-        print("✓ Pre-commit configuration created")
+        print("  Created pre-commit configuration")
 
-    def create_github_actions(self):
-        """Create GitHub Actions CI/CD workflow"""
+    def create_github_actions(self) -> None:
+        """Create GitHub Actions CI/CD workflow with Poetry."""
         print("Creating GitHub Actions workflow...")
 
         ci_workflow = f"""name: CI
@@ -1155,25 +1226,32 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Cache dependencies
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: 1.8.4
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+
+    - name: Load cached venv
+      id: cached-poetry-dependencies
       uses: actions/cache@v4
       with:
-        path: ~/.cache/pip
-        key: ${{{{ runner.os }}}}-pip-${{{{ hashFiles('requirements*.txt') }}}}
-        restore-keys: |
-          ${{{{ runner.os }}}}-pip-
+        path: .venv
+        key: venv-${{{{ runner.os }}}}-${{{{ hashFiles('**/poetry.lock') }}}}
 
     - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r requirements-dev.txt
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      run: poetry install --no-interaction --no-root
+
+    - name: Install project
+      run: poetry install --no-interaction
 
     - name: Run linting
       run: |
-        black --check app tests
-        isort --check-only app tests
-        flake8 app tests
+        poetry run black --check app tests
+        poetry run isort --check-only app tests
+        poetry run ruff check app tests
 
     - name: Run tests
       env:
@@ -1183,7 +1261,7 @@ jobs:
         FIRST_SUPERUSER_EMAIL: admin@test.com
         FIRST_SUPERUSER_PASSWORD: testpassword
       run: |
-        pytest --cov=app --cov-report=xml --cov-report=html
+        poetry run pytest --cov=app --cov-report=xml --cov-report=html
 
     - name: Upload coverage
       uses: codecov/codecov-action@v4
@@ -1195,10 +1273,10 @@ jobs:
         with open(self.base_path / ".github" / "workflows" / "ci.yml", "w") as f:
             f.write(ci_workflow)
 
-        print("✓ GitHub Actions workflow created")
+        print("  Created GitHub Actions workflow")
 
-    def create_readme(self):
-        """Create comprehensive README"""
+    def create_readme(self) -> None:
+        """Create comprehensive README with Poetry instructions."""
         print("Creating README...")
 
         readme = f"""# {self.project_name}
@@ -1208,6 +1286,7 @@ jobs:
 ## Features
 
 - FastAPI framework with async support
+- Poetry for dependency management
 - Pydantic v2 for data validation
 - SQLAlchemy 2.0 for database ORM
 - Alembic for database migrations
@@ -1222,6 +1301,7 @@ jobs:
 ## Requirements
 
 - Python 3.11+
+- Poetry 1.8+
 - PostgreSQL (if using database)
 - Redis (if using caching)
 - Docker & Docker Compose (optional)
@@ -1258,13 +1338,11 @@ jobs:
 ├── docs/
 ├── .github/
 │   └── workflows/
-├── requirements.txt
-├── requirements-dev.txt
+├── pyproject.toml
 ├── Dockerfile
 ├── docker-compose.yml
 ├── .env.example
 ├── .gitignore
-├── pytest.ini
 └── README.md
 ```
 
@@ -1278,36 +1356,53 @@ cp .env.example .env
 # Edit .env with your configuration
 ```
 
-### 2. Install Dependencies
+### 2. Install Poetry (if not already installed)
 
 ```bash
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\\Scripts\\activate
-
-# Install dependencies
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
+curl -sSL https://install.python-poetry.org | python3 -
 ```
 
-### 3. Database Setup
+### 3. Install Dependencies
+
+```bash
+# Install all dependencies (including dev)
+poetry install
+
+# Or install only production dependencies
+poetry install --only main
+```
+
+### 4. Activate Virtual Environment
+
+```bash
+# Option 1: Activate the virtual environment
+poetry shell
+
+# Option 2: Run commands with poetry run prefix
+poetry run python ...
+```
+
+### 5. Database Setup
 
 ```bash
 # Run migrations
-alembic upgrade head
+poetry run alembic upgrade head
 
 # Create initial data (if needed)
-python scripts/init_db.py
+poetry run python scripts/init_db.py
 ```
 
-### 4. Run Development Server
+### 6. Run Development Server
 
 ```bash
-# With uvicorn
+# Using poetry run
+poetry run uvicorn app.main:app --reload
+
+# Or if inside poetry shell
 uvicorn app.main:app --reload
 
-# Or with python
-python -m app.main
+# Or using the defined script
+poetry run start
 ```
 
 The API will be available at:
@@ -1315,7 +1410,7 @@ The API will be available at:
 - Swagger UI: http://localhost:8000/api/v1/docs
 - ReDoc: http://localhost:8000/api/v1/redoc
 
-### 5. Using Docker
+### 7. Using Docker
 
 ```bash
 # Build and run
@@ -1337,48 +1432,66 @@ docker-compose down
 
 ```bash
 # Run all tests
-pytest
+poetry run pytest
 
 # Run with coverage
-pytest --cov=app --cov-report=html
+poetry run pytest --cov=app --cov-report=html
 
 # Run specific test file
-pytest tests/test_health.py
+poetry run pytest tests/test_health.py
 
 # Run with verbose output
-pytest -v
+poetry run pytest -v
 ```
 
 ### Code Quality
 
 ```bash
 # Format code
-black app tests
-isort app tests
+poetry run black app tests
+poetry run isort app tests
 
 # Lint code
-flake8 app tests
-mypy app
+poetry run ruff check app tests
+poetry run mypy app
 
-# Run pre-commit hooks
-pre-commit install
-pre-commit run --all-files
+# Run all checks
+poetry run pre-commit run --all-files
+
+# Install pre-commit hooks
+poetry run pre-commit install
 ```
 
 ### Database Migrations
 
 ```bash
 # Create a new migration
-alembic revision --autogenerate -m "description"
+poetry run alembic revision --autogenerate -m "description"
 
 # Apply migrations
-alembic upgrade head
+poetry run alembic upgrade head
 
 # Rollback migration
-alembic downgrade -1
+poetry run alembic downgrade -1
 
 # View migration history
-alembic history
+poetry run alembic history
+```
+
+### Adding Dependencies
+
+```bash
+# Add a production dependency
+poetry add package-name
+
+# Add a dev dependency
+poetry add --group dev package-name
+
+# Update dependencies
+poetry update
+
+# Show dependency tree
+poetry show --tree
 ```
 
 ## Environment Variables
@@ -1412,11 +1525,11 @@ docker run -p 8000:8000 --env-file .env {self.project_slug}:latest
 ### Manual Deployment
 
 ```bash
-# Install production dependencies
-pip install -r requirements.txt
+# Install production dependencies only
+poetry install --only main
 
 # Run with gunicorn
-gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000
+poetry run gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000
 ```
 
 ## Contributing
@@ -1438,20 +1551,20 @@ MIT License
         with open(self.base_path / "README.md", "w") as f:
             f.write(readme)
 
-        print("✓ README created")
+        print("  Created README")
 
-    def create_makefile(self):
-        """Create Makefile for common tasks"""
+    def create_makefile(self) -> None:
+        """Create Makefile with Poetry commands."""
         print("Creating Makefile...")
 
         makefile = f"""# Makefile for {self.project_name}
 
-.PHONY: help install dev-install run test lint format clean docker-build docker-up docker-down migrate
+.PHONY: help install dev-install run test lint format clean docker-build docker-up docker-down migrate shell
 
 help:
 \t@echo "Available commands:"
 \t@echo "  make install       - Install production dependencies"
-\t@echo "  make dev-install   - Install development dependencies"
+\t@echo "  make dev-install   - Install all dependencies including dev"
 \t@echo "  make run           - Run development server"
 \t@echo "  make test          - Run tests"
 \t@echo "  make test-cov      - Run tests with coverage"
@@ -1462,39 +1575,41 @@ help:
 \t@echo "  make docker-up     - Start Docker containers"
 \t@echo "  make docker-down   - Stop Docker containers"
 \t@echo "  make migrate       - Run database migrations"
+\t@echo "  make shell         - Activate poetry shell"
 
 install:
-\tpip install -r requirements.txt
+\tpoetry install --only main
 
 dev-install:
-\tpip install -r requirements.txt -r requirements-dev.txt
-\tpre-commit install
+\tpoetry install
+\tpoetry run pre-commit install
 
 run:
-\tuvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+\tpoetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 test:
-\tpytest
+\tpoetry run pytest
 
 test-cov:
-\tpytest --cov=app --cov-report=html --cov-report=term
+\tpoetry run pytest --cov=app --cov-report=html --cov-report=term
 
 lint:
-\tblack --check app tests
-\tisort --check-only app tests
-\tflake8 app tests
-\tmypy app
+\tpoetry run black --check app tests
+\tpoetry run isort --check-only app tests
+\tpoetry run ruff check app tests
+\tpoetry run mypy app
 
 format:
-\tblack app tests
-\tisort app tests
+\tpoetry run black app tests
+\tpoetry run isort app tests
+\tpoetry run ruff check --fix app tests
 
 clean:
 \tfind . -type d -name "__pycache__" -exec rm -rf {{}} +
 \tfind . -type f -name "*.pyc" -delete
 \tfind . -type f -name "*.pyo" -delete
 \tfind . -type d -name "*.egg-info" -exec rm -rf {{}} +
-\trm -rf .pytest_cache .coverage htmlcov/ .mypy_cache/
+\trm -rf .pytest_cache .coverage htmlcov/ .mypy_cache/ .ruff_cache/
 
 docker-build:
 \tdocker-compose build
@@ -1506,44 +1621,51 @@ docker-down:
 \tdocker-compose down
 
 migrate:
-\talembic upgrade head
+\tpoetry run alembic upgrade head
 
 migrate-create:
 \t@read -p "Enter migration message: " msg; \\
-\talembic revision --autogenerate -m "$$msg"
+\tpoetry run alembic revision --autogenerate -m "$$msg"
+
+shell:
+\tpoetry shell
 """
 
         with open(self.base_path / "Makefile", "w") as f:
             f.write(makefile)
 
-        print("✓ Makefile created")
+        print("  Created Makefile")
 
-    def initialize_git(self):
-        """Initialize git repository"""
+    def initialize_git(self) -> None:
+        """Initialize git repository."""
         print("Initializing git repository...")
 
         try:
-            subprocess.run(["git", "init"], cwd=self.base_path, check=True, capture_output=True)
-            subprocess.run(["git", "add", "."], cwd=self.base_path, check=True, capture_output=True)
             subprocess.run(
-                ["git", "commit", "-m", "Initial commit: FastAPI project boilerplate"],
+                ["git", "init"], cwd=self.base_path, check=True, capture_output=True
+            )
+            subprocess.run(
+                ["git", "add", "."], cwd=self.base_path, check=True, capture_output=True
+            )
+            subprocess.run(
+                ["git", "commit", "-m", "Initial commit: FastAPI project with Poetry"],
                 cwd=self.base_path,
                 check=True,
-                capture_output=True
+                capture_output=True,
             )
-            print("✓ Git repository initialized")
+            print("  Initialized git repository")
         except subprocess.CalledProcessError as e:
-            print(f"⚠ Git initialization failed: {e}")
+            print(f"  Warning: Git initialization failed: {e}")
 
-    def generate(self):
-        """Generate the complete project"""
-        print(f"\n{'='*60}")
+    def generate(self) -> None:
+        """Generate the complete project."""
+        print(f"\n{'=' * 60}")
         print(f"Generating FastAPI project: {self.project_name}")
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}\n")
 
         try:
             self.create_directory_structure()
-            self.create_requirements_files()
+            self.create_pyproject_toml()
             self.create_core_config()
             self.create_security_module()
             self.create_logger_module()
@@ -1562,56 +1684,22 @@ migrate-create:
             self.create_makefile()
             self.initialize_git()
 
-            print(f"\n{'='*60}")
-            print(f"✓ Project generated successfully!")
-            print(f"{'='*60}\n")
+            print(f"\n{'=' * 60}")
+            print("Project generated successfully!")
+            print(f"{'=' * 60}\n")
 
             print("Next steps:")
-            print(f"1. cd {self.project_slug}")
-            print("2. Create a virtual environment: python -m venv venv")
-            print("3. Activate it: source venv/bin/activate")
-            print("4. Install dependencies: make dev-install")
-            print("5. Update .env with your configuration")
-            print("6. Run migrations: make migrate")
-            print("7. Start development server: make run")
+            print(f"  1. cd {self.project_slug}")
+            print("  2. poetry install")
+            print("  3. cp .env.example .env  (and update with your configuration)")
+            print("  4. poetry run alembic upgrade head  (if using PostgreSQL)")
+            print("  5. poetry run uvicorn app.main:app --reload")
             print(f"\nAPI will be available at: http://localhost:8000")
             print(f"Documentation: http://localhost:8000/api/v1/docs\n")
 
         except Exception as e:
-            print(f"\n✗ Error generating project: {e}")
+            print(f"\nError generating project: {e}")
             import traceback
+
             traceback.print_exc()
             sys.exit(1)
-
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="Generate a production-ready FastAPI project"
-    )
-    parser.add_argument("project_name", help="Name of the project")
-    parser.add_argument("--author", default="Your Name", help="Author name")
-    parser.add_argument("--email", default="your.email@example.com", help="Author email")
-    parser.add_argument("--description", default="A FastAPI project", help="Project description")
-    parser.add_argument("--no-postgres", action="store_true", help="Don't include PostgreSQL setup")
-    parser.add_argument("--no-redis", action="store_true", help="Don't include Redis setup")
-    parser.add_argument("--no-docker", action="store_true", help="Don't include Docker setup")
-    parser.add_argument("--celery", action="store_true", help="Include Celery for background tasks")
-
-    args = parser.parse_args()
-
-    generator = FastAPIGenerator(
-        project_name=args.project_name,
-        author=args.author,
-        email=args.email,
-        description=args.description,
-        use_postgres=not args.no_postgres,
-        use_redis=not args.no_redis,
-        use_docker=not args.no_docker,
-        use_celery=args.celery,
-    )
-
-    generator.generate()
-
-
-if __name__ == "__main__":
-    main()
